@@ -1,0 +1,181 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Daily Journal</title>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f0eee7;
+  color: #292a27;
+  margin: 0;
+  padding: 16px;
+}
+main {
+  max-width: 650px;
+  margin: auto;
+  background: #fbfaf6;
+  padding: 20px;
+  border-radius: 18px;
+}
+h1, h2 { text-align: center; }
+.month {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+button {
+  cursor: pointer;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+}
+#calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+.day {
+  min-height: 42px;
+  color: white;
+  font-weight: bold;
+}
+.green { background: #278b50; }
+.gray { background: #858585; }
+.selected { outline: 3px solid #d7ad45; }
+.weekday {
+  text-align: center;
+  font-size: 12px;
+}
+textarea {
+  width: 100%;
+  min-height: 90px;
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font: inherit;
+}
+label { font-weight: bold; display: block; margin: 16px 0 6px; }
+.goal { margin: 15px 0; }
+#status { color: #777; font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+<h1>My Daily Journal</h1>
+<p style="text-align:center">A little reflection, every day.</p>
+
+<div class="month">
+<button onclick="changeMonth(-1)">❮</button>
+<h2 id="month"></h2>
+<button onclick="changeMonth(1)">❯</button>
+</div>
+
+<p style="text-align:center;font-size:13px">
+🟩 Goal accomplished &nbsp; ⬜ No planned goal accomplished
+</p>
+
+<div id="calendar"></div>
+
+<hr>
+<h2 id="date"></h2>
+
+<label>Morning gratitude</label>
+<p>What household item are you grateful for today?</p>
+<textarea id="gratitude" placeholder="Today I am grateful for..."></textarea>
+
+<hr>
+
+<label>Evening accomplishments</label>
+<p>What did you accomplish today?</p>
+<textarea id="accomplishments" placeholder="Today I accomplished..."></textarea>
+
+<div class="goal">
+<input type="checkbox" id="goal">
+<label style="display:inline">I accomplished my intentionally set goal today.</label>
+</div>
+
+<p id="status">Entries save automatically.</p>
+</main>
+
+<script>
+const storageKey = "myDailyJournal";
+let entries = JSON.parse(localStorage.getItem(storageKey) || "{}");
+let selected = new Date();
+let year = selected.getFullYear();
+let month = selected.getMonth();
+
+function key(d) {
+ return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();
+}
+
+function save() {
+ entries[key(selected)] = {
+  gratitude: gratitude.value,
+  accomplishments: accomplishments.value,
+  goal: goal.checked
+ };
+ localStorage.setItem(storageKey, JSON.stringify(entries));
+ status.textContent = "Saved on this device.";
+ render();
+}
+
+function loadDay() {
+ let e = entries[key(selected)] || {};
+ date.textContent = selected.toDateString();
+ gratitude.value = e.gratitude || "";
+ accomplishments.value = e.accomplishments || "";
+ goal.checked = !!e.goal;
+ render();
+}
+
+function render() {
+ document.getElementById("month").textContent =
+ new Date(year,month).toLocaleString("en-US",{month:"long",year:"numeric"});
+
+ let cal = document.getElementById("calendar");
+ cal.innerHTML = "";
+
+ ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].forEach(x => {
+  let h = document.createElement("div");
+  h.className = "weekday";
+  h.textContent = x;
+  cal.appendChild(h);
+ });
+
+ let first = new Date(year,month,1).getDay();
+ let total = new Date(year,month+1,0).getDate();
+
+ for(let i=0;i<first;i++) cal.appendChild(document.createElement("div"));
+
+ for(let d=1;d<=total;d++) {
+  let dateObj = new Date(year,month,d);
+  let e = entries[key(dateObj)] || {};
+  let b = document.createElement("button");
+  b.textContent = d;
+  b.className = "day " + (e.goal ? "green" : "gray");
+  if(key(dateObj)===key(selected)) b.classList.add("selected");
+  b.onclick = () => { save(); selected=dateObj; loadDay(); };
+  cal.appendChild(b);
+ }
+}
+
+function changeMonth(n) {
+ save();
+ month += n;
+ if(month<0){month=11;year--;}
+ if(month>11){month=0;year++;}
+ render();
+}
+
+gratitude.oninput = save;
+accomplishments.oninput = save;
+goal.onchange = save;
+
+loadDay();
+</script>
+</body>
+</html>
